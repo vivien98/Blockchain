@@ -17,10 +17,12 @@ mio-extras = "2.0"
 serde_json = "1.0"
 tiny_http = "0.6"
 url = "2.1"
+untrusted = "0.7"
 crossbeam = "0.7"
 rand = "0.6"
 hex-literal = "0.2"
 clap = { version = "2.33", features = ["wrap_help"]}
+chrono = {version = "0.4.19", features = ["serde"]}
 
 [features]
 default = []
