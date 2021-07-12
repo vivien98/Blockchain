@@ -1,5 +1,5 @@
 use crate::network::server::Handle as ServerHandle;
-
+use crate::network::message::Message;
 use log::info;
 
 use crossbeam::channel::{unbounded, Receiver, Sender, TryRecvError};
@@ -102,6 +102,7 @@ impl Context {
 
     fn miner_loop(&mut self) {
         // main mining loop
+        let mut blocks_mined: u32 = 0;
         loop {
             // check and react to control signals
             match self.operating_state {
@@ -128,7 +129,7 @@ impl Context {
             // TODO: actual mining
             let mut rng = rand::thread_rng();
             let parent: H256 = self.blockchain.lock().unwrap().tip();
-            let timestamp: u128 = SystemTime::now().duration_since(UNIX_EPOCH).expect("dafuq").as_millis();
+            
             let difficulty: H256 = self.blockchain.lock().unwrap().blockMap[&parent].header.difficulty;
             let nonce: u32 = rng.gen();
 
@@ -149,13 +150,18 @@ impl Context {
             let content = Content{data: data.clone()};
 
             let merkle_tree : MerkleTree = MerkleTree::new(&data);
+            let timestamp: u128 = SystemTime::now().duration_since(UNIX_EPOCH).expect("dafuq").as_millis();
             let header = Header{parent : parent, nonce: nonce, difficulty: difficulty,timestamp: timestamp,merkle_root: merkle_tree.root()};
 
             let block = Block{header: header, content: content};
 
-            if block.hash() <= difficulty {
+            if block.hash() <= difficulty && parent == self.blockchain.lock().unwrap().tip(){
                 self.blockchain.lock().unwrap().insert(&block);
-                println!("{:?}", self.blockchain.lock().unwrap().chainLength );
+                blocks_mined = blocks_mined + 1;
+                println!("Blocks mined {:?}         Chain length {:?}", blocks_mined, self.blockchain.lock().unwrap().chainLength );
+                let mut blockHashVec: Vec<H256> = Vec::new();//self.blockchain.lock().unwrap().all_blocks_in_longest_chain();
+                blockHashVec.push(block.hash());
+                self.server.broadcast(Message::NewBlockHashes(blockHashVec));
             }
 
             if let OperatingState::Run(i) = self.operating_state {

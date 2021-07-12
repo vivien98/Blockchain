@@ -78,16 +78,18 @@ fn main() {
             error!("Error parsing P2P workers: {}", e);
             process::exit(1);
         });
+    let blockchain: Blockchain = Blockchain::new();
+    let wrapped_blockchain = Arc::new(Mutex::new(blockchain));
     let worker_ctx = worker::new(
         p2p_workers,
         msg_rx,
         &server,
+        &wrapped_blockchain
     );
     worker_ctx.start();
 
     // start the miner
-    let blockchain: Blockchain = Blockchain::new();
-    let wrapped_blockchain = Arc::new(Mutex::new(blockchain));
+    
     let (miner_ctx, miner) = miner::new(
         &server,
         &wrapped_blockchain

@@ -18,6 +18,7 @@ impl Hashable for Block {
     }
 }
 
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Header {
 	pub parent: H256,

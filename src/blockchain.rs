@@ -11,7 +11,6 @@ use hex_literal::hex;
 
 pub struct Blockchain {
     pub blockMap : HashMap<H256,Block>,
-    pub leaves : Vec<H256>,
     pub tip : H256,
     pub chainLength : u32
 }
@@ -19,15 +18,13 @@ pub struct Blockchain {
 impl Blockchain {
     /// Create a new blockchain, only containing the genesis block
     pub fn new() -> Self {
-        let mut rng = rand::thread_rng();
-        let sig1: [u8;32] = rng.gen();
-        let sig2: [u8;32] = rng.gen();
-        let sign1: H256 = sig1.into();
-        let sign2: H256 = sig2.into();
+        
+        let sign1: H256 = (hex!("0000000000000000000000000000000000000000000000000000000000000000")).into();;
+        let sign2: H256 = (hex!("0000000000000000000000000000000000000000000000000000000000000000")).into();;
         let signature: [H256;2] = [sign1,sign2];
         let genesis_transaction = SignedTransaction{input: String::from("This is the genesis"), output: String::from("Blockchain begins here"), amount: 0.00, signature: signature};
-        let nonce: u32 = rng.gen();
-        let timestamp: u128 = SystemTime::now().duration_since(UNIX_EPOCH).expect("dafuq").as_millis();
+        let nonce: u32 = 0;
+        let timestamp: u128 = UNIX_EPOCH.duration_since(UNIX_EPOCH).expect("dafuq").as_millis();
         let difficulty: H256 = (hex!("3fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")).into();
         let mut data: Vec<SignedTransaction> = Vec::new();
         data.push(genesis_transaction.clone());
@@ -41,11 +38,11 @@ impl Blockchain {
         let genHash: H256 = Hashable::hash(&gen_block);
         blockMap.insert(genHash,gen_block.clone());
 
-        let mut leaves: Vec<H256> = Vec::new();
-        leaves.push(genHash);
+        //let mut leaves: Vec<H256> = Vec::new();
+        //leaves.push(genHash);
 
         let mut tip: H256 = genHash;
-        Blockchain{blockMap: blockMap,  leaves: leaves, tip: tip, chainLength: 1}
+        Blockchain{blockMap: blockMap, tip: tip, chainLength: 1}
     }
 
     /// Insert a block into blockchain
@@ -53,9 +50,9 @@ impl Blockchain {
         let blockHash: H256 = Hashable::hash(block);
         self.blockMap.insert(blockHash, (*block).clone());
 
-        let index = self.leaves.iter().position(|x| *x == (*block).header.parent).unwrap();
-        self.leaves.remove(index);
-        self.leaves.push(blockHash);
+        //let index = self.leaves.iter().position(|x| *x == (*block).header.parent).unwrap();
+        //self.leaves.remove(index);
+        //self.leaves.push(blockHash);
 
         let mut count = 1;
         let mut thisParent: H256 = (*block).header.parent;
@@ -76,7 +73,7 @@ impl Blockchain {
     }
 
     /// Get the last block's hash of the longest chain
-    #[cfg(any(test, test_utilities))]
+    //#[cfg(any(test, test_utilities))]
     pub fn all_blocks_in_longest_chain(&self) -> Vec<H256> {
         let mut hashVec: Vec<H256> = Vec::new();
         hashVec.push(self.tip);
