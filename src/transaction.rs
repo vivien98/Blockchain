@@ -2,14 +2,16 @@ use serde::{Serialize,Deserialize};
 use ring::signature::{Ed25519KeyPair, Signature, KeyPair, VerificationAlgorithm, EdDSAParameters};
 use rand::Rng;
 use untrusted::Input;
-use crate::crypto::hash::{H256, Hashable};
+use crate::crypto::hash::{H256, H160, Hashable};
+//use crate::crypto::address::{H160};
 use std::convert::TryInto;
+use crate::crypto::key_pair;
 
 
 #[derive(Serialize, Deserialize, Debug, Default,Clone)]
 pub struct Transaction {
-    pub input: String,
-    pub output: String,
+    pub input: H160,
+    pub output: H160,
     pub amount: f32,
 }
 
@@ -18,14 +20,14 @@ impl Hashable for Transaction {
          let byte_transaction = bincode::serialize(&self).unwrap();
          ring::digest::digest(&ring::digest::SHA256, &byte_transaction).into()
      }
-
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct SignedTransaction {
-    pub input: String,
-    pub output: String,
+    pub input: H160,
+    pub output: H160,
     pub amount: f32,
+    pub pub_key: H256,
     pub signature: [H256;2],
 }
 
@@ -33,8 +35,37 @@ impl Hashable for SignedTransaction {
     fn hash(&self) -> H256 {
          let byte_transaction = bincode::serialize(&self).unwrap();
          ring::digest::digest(&ring::digest::SHA256, &byte_transaction).into()
-     }
+    }
+}
 
+pub fn generate_random_signed_transaction() -> (Transaction,SignedTransaction,Ed25519KeyPair) {
+    let mut rng = rand::thread_rng();
+    let key1 = key_pair::random();
+    let key2 = key_pair::random();
+    let addr1 = convertPubKeyToH160(&(key1.public_key()));
+    let addr2 = convertPubKeyToH160(&(key2.public_key()));
+    
+    let trans = Transaction{input: addr1, output: addr2, amount: rng.gen_range(0.0,10.0)};
+    let sig = sign(&trans,&key1);
+    let sigH256: [H256;2] = convertSigToH256(&sig);
+    let pub_key = convertPubKeyToH256(&(key1.public_key()));
+    let signed_trans = SignedTransaction{input: addr1, output: addr2, amount: rng.gen_range(0.0,10.0),pub_key: pub_key,signature:sigH256};
+
+    (trans,signed_trans,key1)
+}
+
+pub fn convertPubKeyToH160(public_key: &<Ed25519KeyPair as KeyPair>::PublicKey) -> H160 {
+    let pub_key:[u8;32] = public_key.as_ref().try_into().unwrap();
+    let pub_key1: H256 = pub_key.into();
+    let hash_pub_key: [u8;32] = pub_key1.hash().into();
+    let truncated: [u8;20] = pub_key[12..].try_into().unwrap();
+    truncated.into()
+}
+
+pub fn convertPubKeyToH256(public_key: &<Ed25519KeyPair as KeyPair>::PublicKey) -> H256 {
+    let pub_key:[u8;32] = public_key.as_ref().try_into().unwrap();
+    let result: H256 = pub_key.into();
+    result
 }
 
 pub fn convertSigToH256(signature: &Signature) -> [H256;2] {
@@ -50,7 +81,6 @@ pub fn convertH256ToSigRef(signature: [H256;2]) -> Vec<u8> {
     let refer1: [u8;32] = signature[0].into();
     let refer2: [u8;32] = signature[1].into();
     [refer1,refer2].concat()
-    
 }
 
 /// Create digital signature of a transaction
@@ -75,15 +105,26 @@ mod tests {
     use super::*; 
     use crate::crypto::key_pair;
 
-    pub fn generate_random_transaction() -> Transaction {
+    pub fn generate_random_transaction() -> (Transaction,SignedTransaction,Ed25519KeyPair) {
         let mut rng = rand::thread_rng();
-        Transaction{input: String::from("Alice"), output: String::from("Bob"), amount: rng.gen_range(0.0,10.0)}
+        let key1 = key_pair::random();
+        let key2 = key_pair::random();
+        let addr1 = convertPubKeyToH160(&(key1.public_key()));
+        let addr2 = convertPubKeyToH160(&(key2.public_key()));
+        
+        let trans = Transaction{input: addr1, output: addr2, amount: rng.gen_range(0.0,10.0)};
+        let sig = sign(&trans,&key1);
+        let sigH256: [H256;2] = convertSigToH256(&sig);
+        let pub_key = convertPubKeyToH256(&(key1.public_key()));
+        let signed_trans = SignedTransaction{input: addr1, output: addr2, amount: rng.gen_range(0.0,10.0),pub_key: pub_key,signature:sigH256};
+
+        (trans,signed_trans,key1)
     }
 
     #[test]
     fn sign_verify() {
-        let t = generate_random_transaction();
-        let key = key_pair::random();
+        let (t,signed_trans,key) = generate_random_transaction();
+        //let key = key_pair::random();
         let signature = sign(&t, &key);
         assert!(verify(&t, &(key.public_key()), &signature));
     }

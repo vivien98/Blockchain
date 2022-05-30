@@ -12,10 +12,11 @@ use std::sync::{Arc, Mutex};
 use crate::blockchain::Blockchain;
 use crate::block::{Header,Content,Block};
 use crate::transaction::{Transaction,SignedTransaction};
+use crate::transaction;
 use crate::crypto::merkle::{MerkleNode,MerkleTree};
 use crate::crypto::hash::{H256, Hashable};
 use rand::Rng;
-
+use crate::crypto::key_pair;
 
 
 enum ControlSignal {
@@ -133,15 +134,14 @@ impl Context {
             let difficulty: H256 = self.blockchain.lock().unwrap().blockMap[&parent].header.difficulty;
             let nonce: u32 = rng.gen();
 
-            let sig1: [u8;32] = rng.gen();
-            let sig2: [u8;32] = rng.gen();
-            let sign1: H256 = sig1.into();
-            let sign2: H256 = sig2.into();
-            let signature: [H256;2] = [sign1,sign2];
-            let faltu_transaction1 = SignedTransaction{input: String::from("This is random faltugiri"), output: String::from("Blockchain"), amount: 1.00, signature: signature};
-            let faltu_transaction2 = SignedTransaction{input: String::from("This is random faltugiri"), output: String::from("Blockchain"), amount: 0.20, signature: signature};
-            let faltu_transaction3 = SignedTransaction{input: String::from("This is random faltugiri"), output: String::from("Blockchain"), amount: 0.03, signature: signature};
-
+            // let sig1: [u8;32] = rng.gen();
+            // let sig2: [u8;32] = rng.gen();
+            // let sign1: H256 = sig1.into();
+            // let sign2: H256 = sig2.into();
+            // let signature: [H256;2] = [sign1,sign2];
+            let (_,faltu_transaction1,_) = transaction::generate_random_signed_transaction();
+            let (_,faltu_transaction2,_) = transaction::generate_random_signed_transaction();
+            let (_,faltu_transaction3,_) = transaction::generate_random_signed_transaction();
             let mut data: Vec<SignedTransaction> = Vec::new();
             data.push(faltu_transaction1.clone());
             data.push(faltu_transaction2.clone());

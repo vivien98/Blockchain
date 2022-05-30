@@ -78,7 +78,7 @@ impl MerkleTree {
     pub fn proof(&self, index: usize) -> Vec<H256> {
         
         let mut result_vec = vec![];
-        let mut trail: MerkleNode = self.node_array_by_levels[0][index].clone();;
+        let mut trail: MerkleNode = self.node_array_by_levels[0][index].clone();
         for level in self.node_array_by_levels.clone() {
             result_vec.push(sibling_hash(&trail));
             trail = *(trail.parent.unwrap());

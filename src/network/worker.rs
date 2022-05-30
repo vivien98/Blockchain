@@ -11,6 +11,8 @@ use crate::crypto::hash::Hashable;
 use std::collections::HashMap;
 use crate::blockchain::Blockchain;
 use crate::block::{Header,Content,Block};
+use crate::transaction::{SignedTransaction};
+
 
 #[derive(Clone)]
 pub struct Context {
@@ -139,6 +141,22 @@ impl Context {
                     if insertedBlocks.len() > 0 {
                         self.server.broadcast(Message::NewBlockHashes(insertedBlocks)); 
                     }
+                         
+                }
+                Message::NewTransactionHashes(transHashVec) => {
+
+                    let mut wantedTrans: Vec<H256> = Vec::new();
+                    
+                    
+                }
+                Message::GetTransaction(transHashVec) => {
+
+                    let mut transVecToSend: Vec<SignedTransaction> = Vec::new();
+
+                }
+                Message::Transaction(transVec) => {
+
+                    
                          
                 }
             }

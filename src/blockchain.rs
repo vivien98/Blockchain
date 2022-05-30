@@ -1,13 +1,15 @@
 use crate::block::{Header,Content,Block};
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
-use crate::crypto::hash::{H256, Hashable};
+use crate::crypto::hash::{H256, H160, Hashable};
+//use crate::crypto::address::H160;
 use chrono::{DateTime,Utc};
 use crate::transaction::{Transaction,SignedTransaction};
 use rand::Rng;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use crate::crypto::merkle::{MerkleNode,MerkleTree};
 use hex_literal::hex;
+use std::convert::TryInto;
 
 pub struct Blockchain {
     pub blockMap : HashMap<H256,Block>,
@@ -19,10 +21,14 @@ impl Blockchain {
     /// Create a new blockchain, only containing the genesis block
     pub fn new() -> Self {
         
-        let sign1: H256 = (hex!("0000000000000000000000000000000000000000000000000000000000000000")).into();;
-        let sign2: H256 = (hex!("0000000000000000000000000000000000000000000000000000000000000000")).into();;
+        let sign1: H256 = (hex!("0000000000000000000000000000000000000000000000000000000000000000")).into();
+        let sign2: H256 = (hex!("0000000000000000000000000000000000000000000000000000000000000001")).into();
+        let pub_key: H256 = (hex!("0000000000000000000000000000000000000000000000000000000000000002")).into();
         let signature: [H256;2] = [sign1,sign2];
-        let genesis_transaction = SignedTransaction{input: String::from("This is the genesis"), output: String::from("Blockchain begins here"), amount: 0.00, signature: signature};
+        let address_gen: [u8;32] =  pub_key.hash().into();//(hex!("0000000000000000000000000000000000000000")).into();
+        let truncated_addr: [u8;20] = (&address_gen[12..]).try_into().unwrap();
+
+        let genesis_transaction = SignedTransaction{input: truncated_addr.into(), output: truncated_addr.into(), amount: 0.00, pub_key: pub_key, signature: signature};
         let nonce: u32 = 0;
         let timestamp: u128 = UNIX_EPOCH.duration_since(UNIX_EPOCH).expect("dafuq").as_millis();
         let difficulty: H256 = (hex!("3fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")).into();
